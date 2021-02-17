@@ -2,13 +2,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-typedef struct	s_zone
-{
-	int		width;
-	int		height;
-	char	background;
-}				t_zone;
-
 typedef struct s_shape
 {
 	char	type;
@@ -16,53 +9,44 @@ typedef struct s_shape
 	float	y;
 	float	width;
 	float	height;
-	char	color;	
+	char 	color;
 }				t_shape;
 
-int		ft_strlen(char *s)
+typedef struct s_zone
+{
+	int		width;
+	int		height;
+	char	back;
+}				t_zone;
+
+int		ft_strlen(char *str)
 {
 	int i;
 
 	i = 0;
-	while (s[i])
+	while(str[i])
 		i++;
 	return (i);
 }
 
-void	clear_all(FILE *file, char *drawing)
+int 	clear_all(FILE *file, char *drawing)
 {
-	fclose(file);
 	if (drawing)
 		free(drawing);
+	fclose(file);
+	return (1);
 }
 
-int	check_zone(t_zone *zone)
+int check_zone(t_zone *zone)
 {
-	return (zone->width > 0 && zone->width <= 300 && zone->height > 0 && zone->height <= 300);
+	return (zone->width >= 0 && zone->width <= 300 && zone->height >= 0 && zone->height <= 300);
 }
 
-char *paint_canvas(t_zone *zone)
-{
-	char *drawing;
-	int i;
-
-	if (!(drawing = malloc(zone->width * zone->height + 1)))
-		return (NULL);
-	i = 0;
-	while (i < zone->height * zone->width)
-	{
-		drawing[i] = zone->background;
-		i++;
-	}
-	drawing[i] = '\0';
-	return (drawing);
-}
-
-int		get_zone(FILE *file, t_zone *zone)
+int		get_canvas(FILE *file, t_zone *zone)
 {
 	int ret;
-	
-	if ((ret = fscanf(file, "%d %d %c\n", &zone->width, &zone->height, &zone->background)) != 3)
+
+	if ((ret = fscanf(file, "%d %d %c\n", &zone->width, &zone->height, &zone->back)) != 3)
 		return (0);
 	if (!check_zone(zone))
 		return (0);
@@ -71,21 +55,32 @@ int		get_zone(FILE *file, t_zone *zone)
 	return (1);
 }
 
-int		check_shape(t_shape *shape)
+char *paint_canvas(t_zone *zone)
 {
-	return (shape->width > 0.00000000 && shape->height > 0.00000000 && (shape->type == 'r' || shape->type == 'R'));
+	int i;
+	char *str;
+
+	i = 0;
+	if (!(str = malloc(zone->width * zone->height)))
+		return (NULL);
+	while (i < zone->width * zone->height)
+	{
+		str[i] = zone->back;
+		i++;
+	}
+	str[i] = '\0';
+	return (str);
 }
 
-int		draw_shapes(FILE *file, t_zone *zone, char **drawing)
+int	get_shapes(FILE *file, t_zone *zone, char **drawing)
 {
-	int ret;
 	t_shape tmp;
+	int ret;
 
-	while ((ret = fscanf(file, "%c %f %f %f %f %c\n", &tmp.type, &tmp.x, &tmp.y, &tmp.width, &tmp.height, &tmp.color) != 6))
+	while ((ret = fcanf(file, "%c %f %f %f %f %c\n", &tmp.type, &tmp.x, &tmp.y, &tmp.width, &tmp.height, &tmp.color)) == 6)
 	{
-		if (!check_shape(tmp))
+		if (!check_shape(&tmp))
 			return (0);
-
 	}
 }
 
@@ -105,9 +100,7 @@ int main (int argc, char **argv)
 	char *drawing;
 	FILE *file;
 
-	zone.width = 0;
-	zone.height = 0;
-	zone.background = 0;
+	drawing = NULL;
 	if (argc != 2)
 	{
 		write(1, "Error: argument\n", 16);
@@ -115,34 +108,26 @@ int main (int argc, char **argv)
 	}
 	if (!(file = fopen(argv[1], "r")))
 	{
-		printf("hola\n");
 		write(1, "Error: Operation file corrupted\n", 32);
-		return (1);
+		return (clear_all(file, drawing)); 
 	}
-	if (!get_zone(file, &zone))
+	if (!get_canvas(file, &zone))
 	{
-		clear_all(file, drawing);
 		write(1, "Error: Operation file corrupted\n", 32);
-		return (1);
+		return (clear_all(file, drawing));
 	}
 	if (!(drawing = paint_canvas(&zone)))
 	{
-		clear_all(file, drawing);
 		write(1, "Error: Operation file corrupted\n", 32);
-		return (1);
+		return (clear_all(file, drawing));
 	}
-	if (!draw_shapes(file, &zone, &drawing))
+	if (!get_shapes(file, &zone, drawing))
 	{
-		clear_all(file, drawing);
 		write(1, "Error: Operation file corrupted\n", 32);
-		return (1);
+		return (clear_all(file, drawing));
 	}
-	printf("%d, %d, %c\n", zone.width, zone.height, zone.background);
-	printf("len: %d\n", ft_strlen(drawing));
-	write(1, drawing, ft_strlen(drawing));
-	printf("\n");
+	printf("%s\n", drawing);
 	return (0);
-
 
 
 }

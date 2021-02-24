@@ -52,8 +52,11 @@ int
 	in_circle(float x, float y, t_shape *shape)
 {
 	float	distance;
+	float	distance2;
 
+	distance2 = sqrtf((x - shape->x) * (x - shape->x) + (y - shape->y) * (y - shape->y));
 	distance = sqrtf(powf(x - shape->x, 2.) + powf(y - shape->y, 2.));
+	//printf("%f %f\n", distance, distance2);
 	if (distance <= shape->radius)
 	{
 		if ((shape->radius - distance) < 1.00000000)
